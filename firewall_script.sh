@@ -30,7 +30,4 @@ iptables -A INPUT -p tcp --dport 80 -m connlimit --connlimit-above 10 --connlimi
 # Aceptar conexiones web si no superan los límites anteriores
 iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 
-# Log de paquetes descartados (opcional)
-iptables -A INPUT -j LOG --log-prefix "FIREWALL DROP: "
-
 echo "Reglas de firewall aplicadas."
