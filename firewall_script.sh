@@ -1,28 +1,36 @@
 #!/bin/bash
 
-# Flush existing rules
+# Limpiar reglas existentes
 iptables -F
 iptables -X
 
-# Default policies
+# Política por defecto: denegar todo
 iptables -P INPUT DROP
 iptables -P FORWARD DROP
 iptables -P OUTPUT ACCEPT
 
-# Allow loopback
+# Permitir loopback
 iptables -A INPUT -i lo -j ACCEPT
 
-# Allow established/related connections
+# Permitir conexiones ya establecidas o relacionadas
 iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# Drop invalid packets
+# Rechazar paquetes inválidos
 iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
-# Limit new HTTP connections (DDoS mitigation)
-iptables -A INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -m limit --limit 10/minute --limit-burst 5 -j ACCEPT
+# Limitar nuevas conexiones por IP (máx 20 por minuto con ráfaga de 10)
+iptables -A INPUT -p tcp --dport 80 -m conntrack --ctstate NEW \
+    -m recent --name ddos --set
+iptables -A INPUT -p tcp --dport 80 -m conntrack --ctstate NEW \
+    -m recent --name ddos --update --seconds 60 --hitcount 20 -j DROP
 
-iptables -A INPUT -p tcp --dport 80 -m connlimi-above 10 -j DROP
-iptables -A INPUT -p tcp --dport 80 -m limit --limit 1/sec --limit-burst 5 -j ACCEPT
+# Limitar número de conexiones simultáneas por IP (máx 10)
+iptables -A INPUT -p tcp --dport 80 -m connlimit --connlimit-above 10 --connlimit-mask 32 -j REJECT --reject-with tcp-reset
 
-# Drop everything else
-iptables -A INPUT -j DROP
+# Aceptar conexiones web si no superan los límites anteriores
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+
+# Log de paquetes descartados (opcional)
+iptables -A INPUT -j LOG --log-prefix "FIREWALL DROP: "
+
+echo "Reglas de firewall aplicadas."
