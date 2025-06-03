@@ -21,7 +21,7 @@ iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 # Limit new HTTP connections (DDoS mitigation)
 iptables -A INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -m limit --limit 10/minute --limit-burst 5 -j ACCEPT
 
-iptables -A INPUT -p tcp --dport 80 -m connlimit 10 -j DROP
+iptables -A INPUT -p tcp --dport 80 -m connlimi-above 10 -j DROP
 iptables -A INPUT -p tcp --dport 80 -m limit 1/sec --limit-burst 5 -j ACCEPT
 
 # Drop everything else
